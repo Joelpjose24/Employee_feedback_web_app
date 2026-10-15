@@ -202,25 +202,45 @@
                     <span>Dashboard</span>
                 </a>
 
-                @if (allSurveys.Count > 1)
+                @if (allSurveys.Any())
                 {
-                    <select class="form-select form-select-sm rounded-pill border-secondary-subtle" style="max-width: 220px;" onchange="switchSurvey(this.value)">
-                        @foreach (var s in allSurveys)
-                        {
-                            if (s.Id == survey?.Id)
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill px-3 py-1 d-inline-flex align-items-center gap-2 shadow-sm text-truncate" 
+                                type="button" 
+                                id="surveyListDropdown" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false"
+                                style="max-width: 260px;"
+                                title="@(survey?.Title ?? "Select Survey")">
+                            <span class="text-truncate fw-medium">@(survey?.Title ?? "Select Survey")</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-start shadow rounded-3 py-2 border mt-1" aria-labelledby="surveyListDropdown" style="min-width: 280px; max-height: 380px; overflow-y: auto; z-index: 1060;">
+                            <li class="dropdown-header small text-uppercase fw-bold text-muted px-3 py-1">
+                                Surveys (@allSurveys.Count)
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            @foreach (var s in allSurveys)
                             {
-                                <option value="@s.Id" selected>@s.Title</option>
+                                var isCurrent = s.Id == survey?.Id;
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center justify-content-between px-3 py-2 @(isCurrent ? "active bg-primary text-white fw-semibold" : "text-dark")" 
+                                       href="@Url.Action("ViewResponses", "Home", new { id = s.Id })">
+                                        <span class="text-truncate me-2" title="@s.Title">@s.Title</span>
+                                        @if (isCurrent)
+                                        {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-check-lg flex-shrink-0" viewBox="0 0 16 16">
+                                                <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z"/>
+                                            </svg>
+                                        }
+                                    </a>
+                                </li>
                             }
-                            else
-                            {
-                                <option value="@s.Id">@s.Title</option>
-                            }
-                        }
-                    </select>
+                        </ul>
+                    </div>
                 }
             </div>
 
-            <!-- Center Tabs (Questions | Responses count | Settings) -->
+            <!-- Center Tabs (Questions | Responses count) -->
             <nav class="gform-tabs-group">
                 <a asp-action="CreateSurvey" class="gform-nav-tab">
                     Questions
@@ -228,9 +248,6 @@
                 <a href="javascript:void(0);" class="gform-nav-tab active">
                     Responses
                     <span class="gform-resp-pill">@Model.Count</span>
-                </a>
-                <a asp-action="AdminDashboard" class="gform-nav-tab">
-                    Settings
                 </a>
             </nav>
 
@@ -425,7 +442,9 @@
     });
 
     function switchSurvey(id) {
-        window.location.href = '@Url.Action("ViewResponses", "Home")?id=' + id;
+        if (id) {
+            window.location.href = '@Url.Action("ViewResponses", "Home", new { id = (int?)null })' + '?id=' + encodeURIComponent(id);
+        }
     }
 
     // ==========================================
