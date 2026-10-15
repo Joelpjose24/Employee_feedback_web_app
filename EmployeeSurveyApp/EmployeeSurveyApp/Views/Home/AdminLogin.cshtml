@@ -1,0 +1,97 @@
+@model EmployeeSurveyApp.Models.AdminLoginViewModel
+@{
+    ViewData["Title"] = "Admin Login";
+}
+
+<div class="row justify-content-center py-4">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="card-header bg-dark bg-gradient text-white text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fw-semibold text-uppercase fs-7">
+                        Management Portal
+                    </span>
+                </div>
+                <h3 class="fw-bold mb-1">Administrator Sign In</h3>
+                <p class="mb-0 text-white-50 small">Administrative console and organization access</p>
+            </div>
+
+            <div class="card-body p-4 p-md-5 bg-white">
+                <form asp-action="AdminLogin" method="post" novalidate>
+                    @if (ViewBag.SuccessMessage != null)
+                    {
+                        <div class="alert alert-success py-2 small mb-4" role="alert">
+                            <i class="bi bi-check-circle me-1"></i> @ViewBag.SuccessMessage
+                        </div>
+                    }
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-4" role="alert"></div>
+
+                    <!-- Admin Username / Email -->
+                    <div class="mb-3">
+                        <label asp-for="UsernameOrEmail" class="form-label fw-semibold small text-muted"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-shield-lock" viewBox="0 0 16 16">
+                                    <path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/>
+                                    <path d="M9.5 6.5a1.5 1.5 0 0 1-1 1.415l.385 1.99a.5.5 0 0 1-.491.595h-.788a.5.5 0 0 1-.49-.595l.384-1.99A1.5 1.5 0 1 1 9.5 6.5"/>
+                                </svg>
+                            </span>
+                            <input asp-for="UsernameOrEmail" class="form-control border-start-0 ps-0" placeholder="admin or admin@company.com" />
+                        </div>
+                        <span asp-validation-for="UsernameOrEmail" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-semibold small text-muted"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-key" viewBox="0 0 16 16">
+                                    <path d="M0 8a4 4 0 0 1 7.465-2H14a.5.5 0 0 1 .354.146l1.5 1.5a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0L13 9.207l-.646.647a.5.5 0 0 1-.708 0L11 9.207l-.646.647a.5.5 0 0 1-.708 0L9 9.207l-.646.647A.5.5 0 0 1 8 10h-.535A4 4 0 0 1 0 8m4-3a3 3 0 1 0 2.712 4.285A.5.5 0 0 1 7.163 9h.63l.853-.854a.5.5 0 0 1 .708 0l.646.647.646-.647a.5.5 0 0 1 .708 0l.646.647.646-.647a.5.5 0 0 1 .708 0l1.147 1.147 1.146-1.147a.5.5 0 0 1 .708 0L16 7.5l-1.146-1.146a.5.5 0 0 1 0-.708l-1.147-1.146A.5.5 0 0 1 13 4.5H7.163a.5.5 0 0 1-.45-.285A3 3 0 0 0 4 5"/>
+                                    <path d="M4 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                                </svg>
+                            </span>
+                            <input asp-for="Password" class="form-control border-start-0 ps-0" type="password" placeholder="Enter administrator password" />
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label small text-muted"></label>
+                        </div>
+                        <span class="badge bg-light text-secondary border">Admin Only</span>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-dark btn-lg fw-semibold shadow-sm">
+                            Sign In as Administrator
+                        </button>
+                    </div>
+
+                    <!-- Switch to Employee -->
+                    <div class="text-center pt-2 border-top">
+                        <span class="small text-muted">Are you an employee?</span>
+                        <a asp-controller="Home" asp-action="EmployeeLogin" class="small fw-semibold text-decoration-none ms-1">
+                            Employee Sign In &rarr;
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Demo Tips Footer -->
+            <div class="card-footer bg-light border-top p-3 text-center">
+                <p class="small text-muted mb-0">
+                    <strong>Default Admin Credentials:</strong> Username: <code>admin</code> | Password: <code>admin</code>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

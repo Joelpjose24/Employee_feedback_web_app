@@ -1,0 +1,24 @@
+# Auto detect text files and perform LF normalization on checkin, CRLF on checkout for Windows
+* text=auto
+
+# Source code files
+*.cs text diff=csharp
+*.cshtml text diff=html
+*.css text
+*.js text
+*.json text
+*.xml text
+*.sln text
+*.slnx text
+*.csproj text
+*.md text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.dll binary
+*.exe binary
+*.so binary

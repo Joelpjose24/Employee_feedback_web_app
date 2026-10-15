@@ -1,0 +1,105 @@
+@model EmployeeSurveyApp.Models.EmployeeLoginViewModel
+@{
+    ViewData["Title"] = "Employee Login";
+}
+
+<div class="row justify-content-center py-4">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="card-header bg-primary bg-gradient text-white text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-white text-primary rounded-pill px-3 py-2 fw-semibold text-uppercase fs-7">
+                        Employee Portal
+                    </span>
+                </div>
+                <h3 class="fw-bold mb-1">Employee Sign In</h3>
+                <p class="mb-0 text-white-50 small">Access your employee dashboard and surveys</p>
+            </div>
+
+            <div class="card-body p-4 p-md-5 bg-white">
+                <form asp-action="EmployeeLogin" method="post" novalidate>
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success py-2 small mb-3" role="alert">
+                            <i class="bi bi-check-circle me-1"></i> @TempData["SuccessMessage"]
+                        </div>
+                    }
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-4" role="alert"></div>
+
+                    <!-- Employee Code (PERNR) -->
+                    <div class="mb-3">
+                        <label asp-for="EmployeeCode" class="form-label fw-semibold small text-muted">
+                            Personnel Number (PERNR)
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-badge" viewBox="0 0 16 16">
+                                    <path d="M6.5 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1zM11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+                                    <path d="M4.5 0A2.5 2.5 0 0 0 2 2.5V14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2.5A2.5 2.5 0 0 0 11.5 0zM3 2.5A1.5 1.5 0 0 1 4.5 1h7A1.5 1.5 0 0 1 13 2.5V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>
+                                </svg>
+                            </span>
+                            <input asp-for="EmployeeCode" class="form-control border-start-0 ps-0" placeholder="e.g. 20001, 20002, 83011590" />
+                        </div>
+                        <span asp-validation-for="EmployeeCode" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Password with Default Hint -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label asp-for="Password" class="form-label fw-semibold small text-muted mb-0"></label>
+                            <span class="badge bg-light text-secondary border small">Default: <code>pernr@123</code></span>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock" viewBox="0 0 16 16">
+                                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2M5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1"/>
+                                </svg>
+                            </span>
+                            <input asp-for="Password" class="form-control border-start-0 ps-0" type="password" placeholder="Enter pernr@123 (e.g. 20001@123)" />
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label small text-muted"></label>
+                        </div>
+                        <span class="small text-muted">Password: <code>pernr@123</code></span>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg fw-semibold shadow-sm">
+                            Sign In to Employee Dashboard
+                        </button>
+                    </div>
+
+                    <!-- Switch to Admin -->
+                    <div class="text-center pt-2 border-top">
+                        <span class="small text-muted">Are you an administrator?</span>
+                        <a asp-controller="Home" asp-action="AdminLogin" class="small fw-semibold text-decoration-none ms-1">
+                            Admin Sign In &rarr;
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Demo Tips Footer -->
+            <div class="card-footer bg-light border-top p-3 text-center">
+                <p class="small text-muted mb-1">
+                    <strong>Demo PERNRs:</strong> <code>20001</code> (Aarav), <code>20002</code> (Priya), <code>20003</code> (Rahul)
+                </p>
+                <p class="small text-muted mb-0">
+                    <strong>Password:</strong> <code>pernr@123</code> (or e.g. <code>20001@123</code>)
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,248 @@
+@model EmployeeSurveyApp.Models.SurveyForm
+@{
+    ViewData["Title"] = Model.Title;
+    var employeePernr = ViewBag.EmployeePernr as string ?? "";
+    var employeeName = ViewBag.EmployeeName as string ?? "Employee";
+    var alreadySubmitted = ViewBag.AlreadySubmitted as bool? ?? false;
+    var submittedAt = ViewBag.SubmittedAt as DateTime?;
+}
+
+<style>
+    .google-forms-bg {
+        background-color: #f0ebf8;
+        min-height: 100vh;
+        margin: -1.5rem -1rem;
+        padding: 2.5rem 1rem 5rem 1rem;
+    }
+    .form-container {
+        max-width: 760px;
+        margin: 0 auto;
+    }
+    .gform-header-card {
+        border-top: 10px solid #673ab7 !important;
+        border-radius: 10px;
+        background: #fff;
+    }
+    .gform-card {
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid #dadce0;
+        transition: box-shadow 0.2s ease;
+    }
+    .gform-card:hover {
+        box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    }
+    .scale-number {
+        cursor: pointer;
+    }
+</style>
+
+<div class="google-forms-bg">
+    <div class="form-container">
+        <!-- Header Card -->
+        <div class="card gform-header-card shadow-sm p-4 p-md-5 mb-3 border-0">
+            <h2 class="fw-bold mb-2 text-dark">@Model.Title</h2>
+            @if (!string.IsNullOrWhiteSpace(Model.Description))
+            {
+                <p class="text-secondary mb-3">@Model.Description</p>
+            }
+
+            <div class="p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill small me-1">
+                        ● Authorized Attendee
+                    </span>
+                    <strong class="text-dark">@employeeName</strong>
+                    <span class="text-muted small ms-1">(PERNR: <code>@employeePernr</code>)</span>
+                </div>
+                <span class="text-danger small fw-semibold">* Indicates required question</span>
+            </div>
+
+            @if (alreadySubmitted)
+            {
+                <div class="alert alert-info mt-3 mb-0 small d-flex align-items-center gap-2" role="alert">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-pencil-square flex-shrink-0" viewBox="0 0 16 16">
+                        <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                        <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
+                    </svg>
+                    <div>
+                        <strong>Editing Your Response:</strong> Your previous answers (submitted on @submittedAt?.ToString("dd-MMM-yyyy HH:mm")) are loaded below. Submitting will update your existing response.
+                    </div>
+                </div>
+            }
+        </div>
+
+        <form id="attendSurveyForm" asp-action="SubmitSurveyResponse" method="post" onsubmit="return gatherAnswers();">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="surveyId" value="@Model.Id" />
+            <input type="hidden" name="pernr" value="@employeePernr" />
+            <input type="hidden" name="answersJson" id="answersJson" value="{}" />
+
+            <!-- Dynamic Question Cards -->
+            <div id="questionsRenderContainer">
+                <!-- Javascript will render question input cards -->
+            </div>
+
+            <!-- Submit Section -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <button type="submit" class="btn btn-lg text-white px-5 rounded-pill shadow fw-semibold" style="background-color: #673ab7; border-color: #673ab7;">
+                    @(alreadySubmitted ? "Update Response" : "Submit Response")
+                </button>
+                <a asp-action="EmployeeDashboard" asp-route-pernr="@employeePernr" class="text-muted small text-decoration-none">
+                    Cancel &amp; Return to Dashboard
+                </a>
+            </div>
+        </form>
+
+        <div class="text-center text-muted small mt-4">
+            Secured Corporate Survey &bull; Only authorized PERNR participants can submit.
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const questions = @Html.Raw(Model.QuestionsJson);
+    const previousAnswers = @Html.Raw(ViewBag.PreviousAnswersJson ?? "null");
+
+    document.addEventListener("DOMContentLoaded", function () {
+        renderAttendeeQuestions();
+    });
+
+    function renderAttendeeQuestions() {
+        const container = document.getElementById("questionsRenderContainer");
+        container.innerHTML = "";
+
+        questions.forEach((q, idx) => {
+            const card = document.createElement("div");
+            card.className = "card gform-card shadow-sm p-4 mb-3 border-0";
+            card.id = `qcard_${q.id}`;
+
+            const prevVal = (previousAnswers && previousAnswers[q.id]) ? previousAnswers[q.id].response : null;
+
+            let bodyHtml = "";
+
+            if (q.type === "short_text") {
+                bodyHtml = `<input type="text" class="form-control" id="input_${q.id}" placeholder="Your answer" value="${escapeHtml(prevVal || '')}" ${q.isRequired ? 'required' : ''} />`;
+            } else if (q.type === "paragraph") {
+                bodyHtml = `<textarea class="form-control" id="input_${q.id}" rows="3" placeholder="Your answer" ${q.isRequired ? 'required' : ''}>${escapeHtml(prevVal || '')}</textarea>`;
+            } else if (q.type === "multiple_choice") {
+                q.options.forEach((opt, oIdx) => {
+                    const isChecked = (prevVal && prevVal === opt) ? "checked" : "";
+                    bodyHtml += `
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="opt_${q.id}" id="opt_${q.id}_${oIdx}" value="${escapeHtml(opt)}" ${isChecked} ${q.isRequired ? 'required' : ''} />
+                            <label class="form-check-label text-dark" for="opt_${q.id}_${oIdx}">${escapeHtml(opt)}</label>
+                        </div>
+                    `;
+                });
+            } else if (q.type === "checkboxes") {
+                q.options.forEach((opt, oIdx) => {
+                    const isChecked = (Array.isArray(prevVal) && prevVal.includes(opt)) ? "checked" : "";
+                    bodyHtml += `
+                        <div class="form-check mb-2">
+                            <input class="form-check-input chk-${q.id}" type="checkbox" id="chk_${q.id}_${oIdx}" value="${escapeHtml(opt)}" ${isChecked} />
+                            <label class="form-check-label text-dark" for="chk_${q.id}_${oIdx}">${escapeHtml(opt)}</label>
+                        </div>
+                    `;
+                });
+            } else if (q.type === "dropdown") {
+                bodyHtml = `<select class="form-select" id="input_${q.id}" ${q.isRequired ? 'required' : ''}><option value="">Choose...</option>`;
+                q.options.forEach(opt => {
+                    const isSelected = (prevVal && prevVal === opt) ? "selected" : "";
+                    bodyHtml += `<option value="${escapeHtml(opt)}" ${isSelected}>${escapeHtml(opt)}</option>`;
+                });
+                bodyHtml += `</select>`;
+            } else if (q.type === "linear_scale") {
+                bodyHtml = `
+                    <div class="p-3 bg-light rounded-3 mt-2">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="small text-muted fw-bold">${escapeHtml(q.scaleMinLabel || "1")}</span>
+                            <span class="small text-muted fw-bold">${escapeHtml(q.scaleMaxLabel || "5")}</span>
+                        </div>
+                        <div class="d-flex justify-content-around">
+                            ${[1, 2, 3, 4, 5].map(n => {
+                                const isChecked = (prevVal !== null && String(prevVal) === String(n)) ? "checked" : "";
+                                return `
+                                    <div class="text-center scale-number">
+                                        <input class="form-check-input" type="radio" name="opt_${q.id}" id="scale_${q.id}_${n}" value="${n}" ${isChecked} ${q.isRequired ? 'required' : ''} />
+                                        <label class="d-block small text-muted mt-1" for="scale_${q.id}_${n}">${n}</label>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (q.type === "date") {
+                bodyHtml = `<input type="date" class="form-control" id="input_${q.id}" value="${escapeHtml(prevVal || '')}" style="max-width: 250px;" ${q.isRequired ? 'required' : ''} />`;
+            } else if (q.type === "time") {
+                bodyHtml = `<input type="time" class="form-control" id="input_${q.id}" value="${escapeHtml(prevVal || '')}" style="max-width: 200px;" ${q.isRequired ? 'required' : ''} />`;
+            }
+
+            card.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark fs-6 mb-1">
+                        ${idx + 1}. ${escapeHtml(q.title)} ${q.isRequired ? '<span class="text-danger">*</span>' : ''}
+                    </label>
+                </div>
+                ${bodyHtml}
+                <div class="text-danger small mt-1 d-none" id="err_${q.id}">This question is required.</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function gatherAnswers() {
+        const answers = {};
+        let isValid = true;
+
+        questions.forEach(q => {
+            const errEl = document.getElementById(`err_${q.id}`);
+            if (errEl) errEl.classList.add("d-none");
+
+            let val = null;
+
+            if (q.type === "short_text" || q.type === "paragraph" || q.type === "dropdown" || q.type === "date" || q.type === "time") {
+                const el = document.getElementById(`input_${q.id}`);
+                val = el ? el.value.trim() : "";
+            } else if (q.type === "multiple_choice" || q.type === "linear_scale") {
+                const checked = document.querySelector(`input[name="opt_${q.id}"]:checked`);
+                val = checked ? checked.value : "";
+            } else if (q.type === "checkboxes") {
+                const checkedArr = [];
+                document.querySelectorAll(`.chk-${q.id}:checked`).forEach(chk => {
+                    checkedArr.push(chk.value);
+                });
+                val = checkedArr;
+            }
+
+            if (q.isRequired) {
+                const isEmpty = (val === null || val === "" || (Array.isArray(val) && val.length === 0));
+                if (isEmpty) {
+                    if (errEl) errEl.classList.remove("d-none");
+                    document.getElementById(`qcard_${q.id}`)?.scrollIntoView({ behavior: 'smooth' });
+                    isValid = false;
+                }
+            }
+
+            answers[q.id] = {
+                title: q.title,
+                type: q.type,
+                response: val
+            };
+        });
+
+        if (!isValid) {
+            return false;
+        }
+
+        document.getElementById("answersJson").value = JSON.stringify(answers);
+        return true;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return "";
+        return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+</script>
+}

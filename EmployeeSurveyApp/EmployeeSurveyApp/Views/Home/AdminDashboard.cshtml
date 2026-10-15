@@ -1,0 +1,210 @@
+@model List<EmployeeSurveyApp.Models.SurveyForm>
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    var responseCounts = ViewBag.ResponseCounts as Dictionary<int, int> ?? new();
+}
+
+<div class="py-4">
+    <!-- Top Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-purple text-white px-3 py-1 rounded-pill fw-semibold fs-7" style="background-color: #673ab7;">
+                    Google Form Survey Manager
+                </span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill small">
+                    ● Active Session
+                </span>
+            </div>
+            <h1 class="h2 fw-bold text-dark mb-0">Administrator Dashboard</h1>
+            <p class="text-muted small mb-0">Create Google Forms surveys and manage attendee PERNR permissions</p>
+        </div>
+
+        <!-- Header Actions: Primary "Add Survey" Button & Sign Out -->
+        <div class="d-flex align-items-center gap-2">
+            <a asp-action="CreateSurvey" class="btn btn-primary btn-lg shadow-sm d-inline-flex align-items-center gap-2 px-4" style="background-color: #673ab7; border-color: #673ab7;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-plus-circle-fill" viewBox="0 0 16 16">
+                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z"/>
+                </svg>
+                <span>Add Survey</span>
+            </a>
+
+            <a asp-action="AdminLogin" class="btn btn-outline-danger d-inline-flex align-items-center gap-1 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
+                    <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
+                </svg>
+                <span>Sign Out</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">Created Google Forms</span>
+                        <h2 class="fw-bold mb-0 text-primary mt-1" style="color: #673ab7 !important;">@Model.Count</h2>
+                    </div>
+                    <div class="p-3 bg-purple bg-opacity-10 rounded-circle text-purple" style="background-color: #ede7f6; color: #673ab7;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
+                            <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/>
+                            <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v3.5A1.5 1.5 0 0 0 11 6h3.5z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">Responses Collected</span>
+                        <h2 class="fw-bold mb-0 text-success mt-1">@responseCounts.Values.Sum()</h2>
+                    </div>
+                    <div class="p-3 bg-success bg-opacity-10 rounded-circle text-success">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" class="bi bi-check2-all" viewBox="0 0 16 16">
+                            <path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0zm-4.208 7-.896-.897.707-.707.543.543 6.646-6.647a.5.5 0 0 1 .708.708l-7 7a.5.5 0 0 1-.708 0"/>
+                            <path d="m5.354 7.146.896.897-.707.707-.897-.896a.5.5 0 1 1 .708-.708"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">PERNR Security</span>
+                        <h5 class="fw-bold mb-0 text-dark mt-2">Active Enforcement</h5>
+                        <small class="text-muted">Only authorized PERNRs can attend</small>
+                    </div>
+                    <div class="p-3 bg-dark bg-opacity-10 rounded-circle text-dark">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" class="bi bi-shield-check" viewBox="0 0 16 16">
+                            <path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/>
+                            <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Surveys List Section -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-white">
+        <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark">Survey Forms</h4>
+                <p class="text-muted small mb-0">List of created Google Forms surveys and attendee access permissions</p>
+            </div>
+            <a asp-action="CreateSurvey" class="btn btn-outline-primary rounded-pill px-3 shadow-sm d-inline-flex align-items-center gap-1" style="color: #673ab7; border-color: #673ab7;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                </svg>
+                <span>New Survey</span>
+            </a>
+        </div>
+
+        <div class="card-body p-0">
+            @if (!Model.Any())
+            {
+                <div class="p-5 text-center">
+                    <div class="mb-3">
+                        <span class="badge bg-purple bg-opacity-10 text-purple p-3 rounded-circle" style="background-color: #ede7f6; color: #673ab7;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-ui-checks" viewBox="0 0 16 16">
+                                <path d="M7 2.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5zM2 1a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm0 8a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2zm.854-3.646a.5.5 0 0 1-.708 0l-1-1a.5.5 0 1 1 .708-.708l.646.647 1.646-1.647a.5.5 0 1 1 .708.708zm0 8a.5.5 0 0 1-.708 0l-1-1a.5.5 0 0 1 .708-.708l.646.647 1.646-1.647a.5.5 0 0 1 .708.708zM7 10.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z"/>
+                            </svg>
+                        </span>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-2">No Surveys Created Yet</h4>
+                    <p class="text-muted small mx-auto mb-4" style="max-width: 480px;">
+                        Click the <strong>Add Survey</strong> button to create your first Google Form survey and assign allowed employee PERNR numbers.
+                    </p>
+                    <a asp-action="CreateSurvey" class="btn btn-primary rounded-pill px-4 shadow-sm" style="background-color: #673ab7; border-color: #673ab7;">
+                        + Create Your First Google Form Survey
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Survey Title</th>
+                                <th>Authorized PERNRs</th>
+                                <th>Responses</th>
+                                <th>Created Date</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model)
+                            {
+                                int respCount = responseCounts.ContainsKey(s.Id) ? responseCounts[s.Id] : 0;
+                                var pernrList = s.AllowedPernrs
+                                    .Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(p => p.Trim())
+                                    .ToList();
+
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark fs-6">@s.Title</div>
+                                        @if (!string.IsNullOrWhiteSpace(s.Description))
+                                        {
+                                            <small class="text-muted d-block text-truncate" style="max-width: 280px;">@s.Description</small>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-purple text-white px-2 py-1 rounded" style="background-color: #673ab7;">
+                                            🔒 @pernrList.Count Employee(s)
+                                        </span>
+                                        <div class="small text-muted font-monospace mt-1 text-truncate" style="max-width: 220px;" title="@s.AllowedPernrs">
+                                            @s.AllowedPernrs
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border px-2 py-1">
+                                            @respCount Response(s)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="small text-muted">@s.CreatedAt.ToString("dd-MMM-yyyy")</span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-action="ViewResponses" asp-route-id="@s.Id" class="btn btn-outline-primary" title="View Responses">
+                                                📊 Responses (@respCount)
+                                            </a>
+                                            <a asp-action="DownloadResponsesExcel" asp-route-id="@s.Id" class="btn btn-outline-success" title="Download Excel (.xlsx)">
+                                                📥 Excel
+                                            </a>
+                                            <!-- Test Attend Link with first permitted PERNR -->
+                                            @if (pernrList.Any())
+                                            {
+                                                <a asp-action="AttendSurvey" asp-route-id="@s.Id" asp-route-pernr="@pernrList.First()" 
+                                                   class="btn btn-outline-success" target="_blank" title="Test Attend as PERNR @pernrList.First()">
+                                                    Attend Form
+                                                </a>
+                                            }
+                                            <form asp-action="DeleteSurvey" asp-route-id="@s.Id" method="post" class="d-inline" onsubmit="return confirm('Delete this survey and its recorded responses?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

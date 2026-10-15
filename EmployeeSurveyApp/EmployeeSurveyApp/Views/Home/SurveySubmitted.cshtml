@@ -1,0 +1,62 @@
+@{
+    bool isUpdate = ViewBag.IsUpdate as bool? ?? false;
+    ViewData["Title"] = isUpdate ? "Response Updated" : "Response Recorded";
+}
+
+<style>
+    .google-forms-bg {
+        background-color: #f0ebf8;
+        min-height: 100vh;
+        margin: -1.5rem -1rem;
+        padding: 4rem 1rem;
+    }
+    .form-container {
+        max-width: 650px;
+        margin: 0 auto;
+    }
+    .gform-header-card {
+        border-top: 10px solid #673ab7 !important;
+        border-radius: 10px;
+        background: #fff;
+    }
+</style>
+
+<div class="google-forms-bg">
+    <div class="form-container">
+        <div class="card gform-header-card shadow-sm p-4 p-md-5 border-0 text-center">
+            <div class="mb-3">
+                <span class="badge bg-success bg-opacity-10 text-success p-3 rounded-circle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                    </svg>
+                </span>
+            </div>
+
+            <h2 class="fw-bold text-dark mb-2">@(ViewBag.SurveyTitle ?? "Survey Completed")</h2>
+            
+            @if (isUpdate)
+            {
+                <h5 class="text-success fw-semibold mb-3">Your response has been updated.</h5>
+                <p class="text-muted small mb-4">
+                    Thank you, <strong>@(ViewBag.EmployeeName ?? "Employee")</strong> (PERNR: <code>@(ViewBag.EmployeePernr ?? "")</code>)! Your existing submission has been successfully updated with your revised answers without creating a duplicate record.
+                </p>
+            }
+            else
+            {
+                <h5 class="text-success fw-semibold mb-3">Your response has been recorded.</h5>
+                <p class="text-muted small mb-4">
+                    Thank you, <strong>@(ViewBag.EmployeeName ?? "Employee")</strong> (PERNR: <code>@(ViewBag.EmployeePernr ?? "")</code>)! Your feedback has been securely submitted to the system.
+                </p>
+            }
+
+            <div class="d-flex justify-content-center gap-2">
+                <a asp-action="EmployeeDashboard" asp-route-pernr="@ViewBag.EmployeePernr" class="btn btn-primary rounded-pill px-4 shadow-sm text-white" style="background-color: #673ab7; border-color: #673ab7;">
+                    &larr; Back to Employee Dashboard
+                </a>
+                <a asp-action="EmployeeLogin" class="btn btn-outline-secondary rounded-pill px-3">
+                    Sign Out
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

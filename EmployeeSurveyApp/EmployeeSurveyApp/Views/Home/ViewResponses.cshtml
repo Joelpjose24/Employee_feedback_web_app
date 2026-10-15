@@ -1,0 +1,900 @@
+@using System.Text.Json
+@model List<EmployeeSurveyApp.Models.SurveyResponse>
+@{
+    ViewData["Title"] = "Survey Responses - EmployeeSurveyApp";
+    var survey = ViewBag.Survey as EmployeeSurveyApp.Models.SurveyForm;
+    var allSurveys = ViewBag.AllSurveys as List<EmployeeSurveyApp.Models.SurveyForm> ?? new();
+    var questions = ViewBag.Questions as List<EmployeeSurveyApp.Models.SurveyQuestionModel> ?? new();
+    var employees = ViewBag.Employees as Dictionary<string, EmployeeSurveyApp.Models.MasterData> ?? new();
+}
+
+<style>
+    /* Google Forms Body Background */
+    .gform-body-wrapper {
+        background-color: #f0ebf8;
+        min-height: 100vh;
+        margin: -1.5rem -1rem;
+        padding-bottom: 5rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* Google Forms Header Navigation Bar */
+    .gform-nav-header {
+        background: #ffffff;
+        border-bottom: 1px solid #dadce0;
+        position: sticky;
+        top: 0;
+        z-index: 1020;
+    }
+
+    .gform-nav-inner {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 54px;
+    }
+
+    .gform-tabs-group {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin: 0 auto;
+    }
+
+    .gform-nav-tab {
+        color: #5f6368;
+        font-weight: 500;
+        font-size: 0.95rem;
+        padding: 0.9rem 1.25rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-bottom: 3px solid transparent;
+        transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .gform-nav-tab:hover {
+        color: #202124;
+    }
+
+    .gform-nav-tab.active {
+        color: #00796b;
+        border-bottom: 3px solid #00796b;
+        font-weight: 600;
+    }
+
+    .gform-resp-pill {
+        background-color: #00796b;
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        line-height: 1;
+    }
+
+    /* Main Container */
+    .gform-main-content {
+        max-width: 860px;
+        margin: 1.5rem auto 0 auto;
+        padding: 0 1rem;
+    }
+
+    /* Google Forms Cards */
+    .gform-card {
+        background: #ffffff;
+        border-radius: 8px;
+        border: 1px solid #dadce0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.25rem;
+        padding: 1.5rem 1.75rem;
+        transition: box-shadow 0.2s ease;
+    }
+
+    .gform-card:hover {
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .gform-card-title {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #202124;
+        margin-bottom: 0.25rem;
+        line-height: 1.4;
+    }
+
+    .gform-card-sub {
+        font-size: 0.85rem;
+        color: #5f6368;
+        margin-bottom: 1.25rem;
+    }
+
+    /* Google Forms Gray Footer Strip on Question Cards */
+    .gform-bottom-strip {
+        height: 10px;
+        background-color: #dadce0;
+        border-radius: 4px;
+        margin-top: 1.75rem;
+        width: 100%;
+    }
+
+    /* Google Forms Copy Button */
+    .gform-copy-btn {
+        background: transparent;
+        border: none;
+        color: #1a73e8;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+
+    .gform-copy-btn:hover {
+        background-color: #f1f3f4;
+        color: #174ea6;
+    }
+
+    /* View Switcher Pills */
+    .gform-switcher {
+        background: #f1f3f4;
+        border-radius: 999px;
+        padding: 3px;
+        display: inline-flex;
+        gap: 2px;
+    }
+
+    .gform-switcher-btn {
+        border: none;
+        background: transparent;
+        padding: 0.35rem 1.1rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #5f6368;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .gform-switcher-btn.active {
+        background: #ffffff;
+        color: #202124;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Toast Notification */
+    #copyToast {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #323232;
+        color: #fff;
+        padding: 0.65rem 1.25rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+
+<div class="gform-body-wrapper">
+    <!-- TOP NAVIGATION BAR (GOOGLE FORMS REPLICA) -->
+    <header class="gform-nav-header shadow-sm">
+        <div class="gform-nav-inner">
+            <!-- Left Action: Back to Admin or Survey Selector -->
+            <div class="d-flex align-items-center gap-2">
+                <a asp-action="AdminDashboard" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1" title="Back to Dashboard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+
+                @if (allSurveys.Count > 1)
+                {
+                    <select class="form-select form-select-sm rounded-pill border-secondary-subtle" style="max-width: 220px;" onchange="switchSurvey(this.value)">
+                        @foreach (var s in allSurveys)
+                        {
+                            if (s.Id == survey?.Id)
+                            {
+                                <option value="@s.Id" selected>@s.Title</option>
+                            }
+                            else
+                            {
+                                <option value="@s.Id">@s.Title</option>
+                            }
+                        }
+                    </select>
+                }
+            </div>
+
+            <!-- Center Tabs (Questions | Responses count | Settings) -->
+            <nav class="gform-tabs-group">
+                <a asp-action="CreateSurvey" class="gform-nav-tab">
+                    Questions
+                </a>
+                <a href="javascript:void(0);" class="gform-nav-tab active">
+                    Responses
+                    <span class="gform-resp-pill">@Model.Count</span>
+                </a>
+                <a asp-action="AdminDashboard" class="gform-nav-tab">
+                    Settings
+                </a>
+            </nav>
+
+            <!-- Right Actions: Export to Excel -->
+            <div>
+                <a asp-action="DownloadResponsesExcel" asp-route-id="@survey?.Id" 
+                   class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1 fw-semibold"
+                   title="Download All Responses as Excel Spreadsheet">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-spreadsheet" viewBox="0 0 16 16">
+                        <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                        <path d="M3 12h10v1H3zm0-2h10v1H3zm0-2h10v1H3zm0-2h10v1H3z"/>
+                    </svg>
+                    <span>Export to Excel</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN BODY -->
+    <main class="gform-main-content">
+        <!-- HEADER OVERVIEW CARD -->
+        <div class="gform-card mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h1 class="display-6 fw-bold text-dark mb-1" style="font-size: 1.85rem;">@Model.Count responses</h1>
+                    <div class="text-muted small">
+                        <strong>Survey:</strong> @(survey?.Title ?? "Employee Survey") &bull; 
+                        <strong>Authorized:</strong> @(survey?.AllowedPernrs?.Split(',')?.Length ?? 0) employees
+                    </div>
+                </div>
+
+                <!-- View Switcher: Summary | Individual | Data Table -->
+                <div class="gform-switcher">
+                    <button type="button" class="gform-switcher-btn active" id="btnTabSummary" onclick="switchTab('summary')">
+                        Summary
+                    </button>
+                    <button type="button" class="gform-switcher-btn" id="btnTabIndividual" onclick="switchTab('individual')">
+                        Individual
+                    </button>
+                    <button type="button" class="gform-switcher-btn" id="btnTabTable" onclick="switchTab('table')">
+                        Data Table
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <!-- EMPTY STATE -->
+            <div class="gform-card text-center py-5">
+                <div class="mb-3">
+                    <span class="badge bg-light text-secondary p-3 rounded-circle border">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="currentColor" class="bi bi-inbox text-muted" viewBox="0 0 16 16">
+                            <path d="M4.98 4a.5.5 0 0 0-.39.188L1.54 8H6a.5.5 0 0 1 .5.5 1.5 1.5 0 1 0 3 0A.5.5 0 0 1 10 8h4.46l-3.05-3.812A.5.5 0 0 0 11.02 4zm9.954 5H10.45a2.5 2.5 0 0 1-4.9 0H1.066l.32 2.562a.5.5 0 0 0 .497.438h12.234a.5.5 0 0 0 .496-.438zM3.809 3.563A1.5 1.5 0 0 1 4.981 3h6.038a1.5 1.5 0 0 1 1.172.563l3.7 4.625a1 1 0 0 1 .109 1.018l-1 8A1 1 0 0 1 14 18H2a1 1 0 0 1-.991-.876l-1-8a1 1 0 0 1 .109-1.018z"/>
+                        </svg>
+                    </span>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">Waiting for responses</h4>
+                <p class="text-muted small mx-auto mb-3" style="max-width: 440px;">
+                    None of the authorized employees have submitted this survey yet. Once responses are received, visual charts and statistics will display here automatically.
+                </p>
+                <a asp-action="AdminDashboard" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+                    Back to Admin Dashboard
+                </a>
+            </div>
+        }
+        else
+        {
+            <!-- SECTION 1: SUMMARY (AUTHENTIC GOOGLE FORMS CHARTS VIEW) -->
+            <div id="sectionSummary">
+                <!-- Dynamically generated question cards with Chart.js -->
+                <div id="summaryCardsContainer"></div>
+            </div>
+
+            <!-- SECTION 2: INDIVIDUAL RESPONSES VIEW -->
+            <div id="sectionIndividual" class="d-none">
+                <div class="gform-card p-3 mb-3 d-flex flex-row justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" style="width: 32px; height: 32px; padding: 0;" onclick="navigateIndividual(-1)">
+                            &lt;
+                        </button>
+                        <span class="small fw-semibold text-dark">
+                            <span id="currentIndIndex">1</span> of @Model.Count
+                        </span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" style="width: 32px; height: 32px; padding: 0;" onclick="navigateIndividual(1)">
+                            &gt;
+                        </button>
+                    </div>
+
+                    <div>
+                        <span class="badge bg-light text-dark border font-monospace me-2" id="indPernrBadge">PERNR: ...</span>
+                        <span class="small text-muted" id="indDateBadge">Submitted: ...</span>
+                    </div>
+                </div>
+
+                <div id="individualResponseCard" class="gform-card p-4 p-md-5">
+                    <!-- Rendered via JS -->
+                </div>
+            </div>
+
+            <!-- SECTION 3: DATA TABLE VIEW -->
+            <div id="sectionTable" class="d-none">
+                <div class="gform-card p-0 overflow-hidden">
+                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                        <h6 class="fw-bold mb-0 text-dark">All Submissions (@Model.Count)</h6>
+                        <a asp-action="DownloadResponsesExcel" asp-route-id="@survey?.Id" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold">
+                            Download Excel (.xlsx)
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted small">
+                                <tr>
+                                    <th>#</th>
+                                    <th>PERNR</th>
+                                    <th>Employee Name</th>
+                                    <th>Department</th>
+                                    <th>Submitted Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.Count; i++)
+                                {
+                                    var r = Model[i];
+                                    employees.TryGetValue(r.Pernr, out var emp);
+                                    <tr>
+                                        <td>@(i + 1)</td>
+                                        <td><span class="badge bg-light text-dark border font-monospace">@r.Pernr</span></td>
+                                        <td><strong>@r.EmployeeName</strong></td>
+                                        <td><span class="text-muted small">@(emp?.Department ?? "N/A")</span></td>
+                                        <td><span class="small text-muted">@r.SubmittedAt.ToString("dd-MMM-yyyy HH:mm")</span></td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="viewIndividualByIndex(@i)">
+                                                View Form
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </main>
+</div>
+
+<!-- COPY TOAST NOTIFICATION -->
+<div id="copyToast">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill text-success" viewBox="0 0 16 16">
+        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+    </svg>
+    <span id="toastMessage">Copied to clipboard</span>
+</div>
+
+@section Scripts {
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const questionsData = @Html.Raw(JsonSerializer.Serialize(questions));
+    const responsesData = @Html.Raw(JsonSerializer.Serialize(Model.Select(r => new {
+        r.Id,
+        r.Pernr,
+        r.EmployeeName,
+        r.SubmittedAt,
+        r.AnswersJson
+    })));
+
+    // Parse responses JSON
+    const parsedResponses = responsesData.map(r => {
+        let answers = {};
+        try {
+            answers = JSON.parse(r.AnswersJson || "{}");
+        } catch (e) {
+            console.error("JSON parse error", e);
+        }
+        return {
+            ...r,
+            answers
+        };
+    });
+
+    let currentIndIndex = 0;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if (parsedResponses.length > 0) {
+            renderSummaryCharts();
+            renderIndividualView(0);
+        }
+    });
+
+    function switchSurvey(id) {
+        window.location.href = '@Url.Action("ViewResponses", "Home")?id=' + id;
+    }
+
+    // ==========================================
+    // TAB SWITCHING (Summary / Individual / Table)
+    // ==========================================
+    function switchTab(tabName) {
+        document.getElementById("sectionSummary").classList.toggle("d-none", tabName !== "summary");
+        document.getElementById("sectionIndividual").classList.toggle("d-none", tabName !== "individual");
+        document.getElementById("sectionTable").classList.toggle("d-none", tabName !== "table");
+
+        document.getElementById("btnTabSummary").className = tabName === "summary" ? "gform-switcher-btn active" : "gform-switcher-btn";
+        document.getElementById("btnTabIndividual").className = tabName === "individual" ? "gform-switcher-btn active" : "gform-switcher-btn";
+        document.getElementById("btnTabTable").className = tabName === "table" ? "gform-switcher-btn active" : "gform-switcher-btn";
+    }
+
+    // ==========================================
+    // SUMMARY CHARTS (GOOGLE FORMS REPLICA)
+    // ==========================================
+    function renderSummaryCharts() {
+        const container = document.getElementById("summaryCardsContainer");
+        container.innerHTML = "";
+
+        // Custom Plugin 1: Draw percentage directly on Pie Slices in White
+        const pieLabelsPlugin = {
+            id: 'pieLabelsPlugin',
+            afterDatasetsDraw(chart) {
+                if (chart.config.type !== 'pie' && chart.config.type !== 'doughnut') return;
+                const { ctx, data } = chart;
+                const meta = chart.getDatasetMeta(0);
+                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                if (total === 0) return;
+
+                meta.data.forEach((arc, i) => {
+                    const count = data.datasets[0].data[i];
+                    if (!count || count === 0) return;
+                    const pct = ((count / total) * 100).toFixed(1) + '%';
+
+                    // Compute center of slice
+                    const angle = (arc.startAngle + arc.endAngle) / 2;
+                    const radius = (arc.innerRadius + arc.outerRadius) / 2;
+                    const x = arc.x + Math.cos(angle) * radius;
+                    const y = arc.y + Math.sin(angle) * radius;
+
+                    ctx.save();
+                    ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(pct, x, y);
+                    ctx.restore();
+                });
+            }
+        };
+
+        // Custom Plugin 2: Draw count & percentage on Linear Scale / Bar charts (Exact match to ref image)
+        const barLabelsPlugin = {
+            id: 'barLabelsPlugin',
+            afterDatasetsDraw(chart) {
+                if (chart.config.type !== 'bar') return;
+                const { ctx, data } = chart;
+                const meta = chart.getDatasetMeta(0);
+                const total = data.datasets[0].totalResponses || 1;
+
+                meta.data.forEach((bar, index) => {
+                    const count = data.datasets[0].data[index];
+                    const pct = total > 0 ? ((count / total) * 100).toFixed(1) : '0';
+                    const text = `${count} (${pct}%)`;
+
+                    ctx.save();
+                    ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                    ctx.textAlign = 'center';
+
+                    // If bar has substantial height, draw inside the top of the bar in white
+                    if (count > 0 && (bar.base - bar.y) > 28) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillText(text, bar.x, bar.y + 16);
+                    } else {
+                        // Otherwise draw sitting directly above the bar / baseline
+                        ctx.fillStyle = count > 0 ? '#2e7d6b' : '#333333';
+                        ctx.fillText(text, bar.x, bar.y - 7);
+                    }
+                    ctx.restore();
+                });
+            }
+        };
+
+        // Google Palette for Pie Charts
+        const googleColors = [
+            '#4285f4', // Blue
+            '#ea4335', // Red / Coral
+            '#fbbc05', // Yellow / Amber
+            '#34a853', // Green
+            '#ab47bc', // Purple
+            '#00acc1', // Cyan
+            '#ff7043'  // Deep Orange
+        ];
+
+        questionsData.forEach((q, qIndex) => {
+            const card = document.createElement("div");
+            card.className = "gform-card";
+
+            // Extract answers for this question
+            const answerList = [];
+            parsedResponses.forEach(r => {
+                if (r.answers && r.answers[q.id] && r.answers[q.id].response !== undefined && r.answers[q.id].response !== null) {
+                    answerList.push(r.answers[q.id].response);
+                }
+            });
+
+            const validCount = answerList.length;
+
+            // Card Header matching Google Forms
+            card.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="gform-card-title">${escapeHtml(q.title)}</div>
+                        <div class="gform-card-sub">${validCount} response${validCount !== 1 ? 's' : ''}</div>
+                    </div>
+                    <button type="button" class="gform-copy-btn" onclick="copyCardSummary('${q.id}', '${escapeJs(q.title)}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"/>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
+                <div id="body_${q.id}"></div>
+                <div class="gform-bottom-strip"></div>
+            `;
+            container.appendChild(card);
+
+            const bodyContent = card.querySelector(`#body_${q.id}`);
+
+            // CASE 1: MULTIPLE CHOICE or DROPDOWN -> PIE CHART (Like Top Card in reference screenshot)
+            if (q.type === 'multiple_choice' || q.type === 'dropdown') {
+                const optionCounts = {};
+                if (q.options && q.options.length > 0) {
+                    q.options.forEach(opt => { optionCounts[opt] = 0; });
+                }
+
+                answerList.forEach(ans => {
+                    if (optionCounts[ans] !== undefined) {
+                        optionCounts[ans]++;
+                    } else if (ans) {
+                        optionCounts[ans] = (optionCounts[ans] || 0) + 1;
+                    }
+                });
+
+                const labels = Object.keys(optionCounts);
+                const counts = Object.values(optionCounts);
+
+                bodyContent.innerHTML = `
+                    <div style="position: relative; height: 260px; max-width: 520px; margin: 0 auto;">
+                        <canvas id="chart_${q.id}"></canvas>
+                    </div>
+                `;
+
+                const ctx = document.getElementById(`chart_${q.id}`).getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    plugins: [pieLabelsPlugin],
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: googleColors.slice(0, labels.length)
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    padding: 14,
+                                    font: { size: 12, family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
+                                    color: '#3c4043'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const count = context.raw || 0;
+                                        const pct = validCount > 0 ? ((count / validCount) * 100).toFixed(1) : '0';
+                                        return ` ${context.label}: ${count} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // CASE 2: LINEAR SCALE (1 to 5) -> VERTICAL BAR CHART (Exact Bottom Card in reference screenshot)
+            else if (q.type === 'linear_scale') {
+                const scaleCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+                answerList.forEach(ans => {
+                    const n = parseInt(ans);
+                    if (!isNaN(n) && scaleCounts[n] !== undefined) {
+                        scaleCounts[n]++;
+                    }
+                });
+
+                const labels = ['1', '2', '3', '4', '5'];
+                const counts = [scaleCounts[1], scaleCounts[2], scaleCounts[3], scaleCounts[4], scaleCounts[5]];
+                const maxVal = Math.max(...counts, 4) + 1;
+                // Round to next even number for authentic Y-axis tick intervals
+                const roundedMax = maxVal % 2 === 0 ? maxVal : maxVal + 1;
+
+                bodyContent.innerHTML = `
+                    <div style="position: relative; height: 260px; max-width: 680px; margin: 0 auto;">
+                        <canvas id="chart_${q.id}"></canvas>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small mt-2 px-2">
+                        <span>1 (${escapeHtml(q.scaleMinLabel || "Worst")})</span>
+                        <span>5 (${escapeHtml(q.scaleMaxLabel || "Best")})</span>
+                    </div>
+                `;
+
+                const ctx = document.getElementById(`chart_${q.id}`).getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    plugins: [barLabelsPlugin],
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: '#2e7d6b', // Authentic teal green from reference screenshot
+                            borderRadius: 2,
+                            barPercentage: 0.65,
+                            categoryPercentage: 0.8,
+                            totalResponses: validCount
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: {
+                            padding: { top: 25 }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: roundedMax,
+                                ticks: {
+                                    stepSize: 2,
+                                    color: '#5f6368',
+                                    font: { size: 12 }
+                                },
+                                grid: {
+                                    color: '#e0e0e0',
+                                    drawBorder: false
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: '#5f6368',
+                                    font: { size: 12 }
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const count = ctx.raw;
+                                        const pct = validCount > 0 ? ((count / validCount) * 100).toFixed(1) : '0';
+                                        return ` Rating ${ctx.label}: ${count} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // CASE 3: CHECKBOXES -> HORIZONTAL OR VERTICAL BAR CHART
+            else if (q.type === 'checkboxes') {
+                const optCounts = {};
+                if (q.options && q.options.length > 0) {
+                    q.options.forEach(opt => { optCounts[opt] = 0; });
+                }
+
+                answerList.forEach(ansArr => {
+                    if (Array.isArray(ansArr)) {
+                        ansArr.forEach(item => {
+                            optCounts[item] = (optCounts[item] || 0) + 1;
+                        });
+                    } else if (ansArr) {
+                        optCounts[ansArr] = (optCounts[ansArr] || 0) + 1;
+                    }
+                });
+
+                const labels = Object.keys(optCounts);
+                const counts = Object.values(optCounts);
+                const maxVal = Math.max(...counts, 4) + 1;
+
+                bodyContent.innerHTML = `
+                    <div style="position: relative; height: 260px; max-width: 680px; margin: 0 auto;">
+                        <canvas id="chart_${q.id}"></canvas>
+                    </div>
+                `;
+
+                const ctx = document.getElementById(`chart_${q.id}`).getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    plugins: [barLabelsPlugin],
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: '#4285f4', // Google Blue
+                            borderRadius: 3,
+                            barPercentage: 0.55,
+                            totalResponses: validCount
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: { padding: { top: 25 } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: maxVal,
+                                ticks: { stepSize: 1, color: '#5f6368' },
+                                grid: { color: '#e0e0e0', drawBorder: false }
+                            },
+                            x: {
+                                ticks: { color: '#5f6368', font: { size: 11 } },
+                                grid: { display: false }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            // CASE 4: SHORT TEXT / PARAGRAPH -> LIST OF RESPONSES
+            else {
+                let responsesListHtml = `<div class="d-flex flex-column gap-2" style="max-height: 280px; overflow-y: auto;">`;
+                if (answerList.length === 0) {
+                    responsesListHtml += `<div class="text-muted small fst-italic py-2">No text responses submitted for this question yet.</div>`;
+                } else {
+                    answerList.forEach(txt => {
+                        if (txt && String(txt).trim()) {
+                            responsesListHtml += `
+                                <div class="p-2 px-3 bg-light rounded-2 border-start border-4 border-primary text-dark small" style="border-color: #00796b !important;">
+                                    ${escapeHtml(String(txt))}
+                                </div>
+                            `;
+                        }
+                    });
+                }
+                responsesListHtml += `</div>`;
+                bodyContent.innerHTML = responsesListHtml;
+            }
+        });
+    }
+
+    // ==========================================
+    // INDIVIDUAL VIEW
+    // ==========================================
+    function viewIndividualByIndex(idx) {
+        currentIndIndex = idx;
+        switchTab('individual');
+        renderIndividualView(idx);
+    }
+
+    function navigateIndividual(delta) {
+        currentIndIndex = currentIndIndex + delta;
+        if (currentIndIndex < 0) currentIndIndex = 0;
+        if (currentIndIndex >= parsedResponses.length) currentIndIndex = parsedResponses.length - 1;
+        renderIndividualView(currentIndIndex);
+    }
+
+    function renderIndividualView(index) {
+        if (!parsedResponses[index]) return;
+        const r = parsedResponses[index];
+
+        document.getElementById("currentIndIndex").innerText = (index + 1);
+        document.getElementById("indPernrBadge").innerText = `PERNR: ${r.Pernr}`;
+        document.getElementById("indDateBadge").innerText = `Submitted: ${new Date(r.SubmittedAt).toLocaleString()}`;
+
+        const container = document.getElementById("individualResponseCard");
+        let html = `
+            <div class="mb-4 pb-3 border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="fw-bold text-dark mb-1">${escapeHtml(r.EmployeeName)}</h4>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">
+                        PERNR: ${escapeHtml(r.Pernr)}
+                    </span>
+                </div>
+            </div>
+        `;
+
+        questionsData.forEach((q, idx) => {
+            const ansObj = r.answers[q.id];
+            const resp = ansObj ? ansObj.response : null;
+
+            html += `
+                <div class="card p-3 mb-3 border bg-white rounded-3 shadow-none">
+                    <label class="fw-bold small text-dark mb-2">
+                        ${idx + 1}. ${escapeHtml(q.title)}
+                    </label>
+            `;
+
+            if (resp === null || resp === undefined || resp === "") {
+                html += `<div class="text-muted small fst-italic">No answer provided</div>`;
+            } else if (Array.isArray(resp)) {
+                html += `<div class="d-flex flex-wrap gap-1">${resp.map(item => `<span class="badge bg-primary text-white">${escapeHtml(item)}</span>`).join('')}</div>`;
+            } else {
+                html += `<div class="p-2 bg-light rounded text-dark small fw-medium">${escapeHtml(String(resp))}</div>`;
+            }
+
+            html += `</div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ==========================================
+    // COPY SUMMARY CLIPBOARD & TOAST
+    // ==========================================
+    function copyCardSummary(qId, qTitle) {
+        let copyText = `Question: ${qTitle}\nResponses:\n`;
+        const answers = [];
+        parsedResponses.forEach(r => {
+            if (r.answers && r.answers[qId] && r.answers[qId].response !== undefined) {
+                answers.push(r.answers[qId].response);
+            }
+        });
+
+        copyText += answers.map((a, i) => `${i + 1}. ${Array.isArray(a) ? a.join(', ') : a}`).join('\n');
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(copyText).then(() => {
+                showToast("Summary copied to clipboard");
+            });
+        } else {
+            showToast("Summary copied to clipboard");
+        }
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById("copyToast");
+        document.getElementById("toastMessage").innerText = msg;
+        toast.style.display = "flex";
+        setTimeout(() => {
+            toast.style.display = "none";
+        }, 2200);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return "";
+        return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function escapeJs(text) {
+        if (!text) return "";
+        return String(text).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+</script>
+}
