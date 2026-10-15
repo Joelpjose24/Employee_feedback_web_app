@@ -1,3 +1,4 @@
+@using System.Text.Json
 @model EmployeeSurveyApp.Models.SurveyForm
 @{
     ViewData["Title"] = "Create Survey - Google Form Builder";
@@ -56,18 +57,147 @@
         top: 80px;
         z-index: 100;
     }
-    .emp-badge-pill {
+
+    /* Dynamic Employee Search & Autocomplete Styles */
+    .emp-search-container {
+        position: relative;
+    }
+    .emp-search-input-group {
+        position: relative;
+    }
+    .emp-search-input-group .search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        pointer-events: none;
+    }
+    .emp-search-input-group input {
+        padding-left: 42px;
+        padding-right: 42px;
+        border-radius: 50px;
+        border-color: #673ab7;
+    }
+    .emp-search-input-group input:focus {
+        border-color: #673ab7;
+        box-shadow: 0 0 0 0.25rem rgba(103, 58, 183, 0.2);
+    }
+    .emp-search-input-group .btn-clear-search {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #adb5bd;
+        font-size: 1.25rem;
         cursor: pointer;
-        user-select: none;
+        display: none;
+        padding: 0;
+        line-height: 1;
+    }
+    .emp-search-input-group .btn-clear-search:hover {
+        color: #495057;
+    }
+    .emp-suggestions-dropdown {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border: 1px solid #dadce0;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        max-height: 420px;
+        overflow-y: auto;
+        z-index: 1060;
+        display: none;
+    }
+    .emp-suggestion-section {
+        border-bottom: 1px solid #edf2f7;
+    }
+    .emp-suggestion-section:last-child {
+        border-bottom: none;
+    }
+    .emp-suggestion-header {
+        background-color: #f8f9fa;
+        padding: 0.65rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #495057;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+    .emp-suggestion-row {
+        padding: 0.65rem 1rem;
+        border-bottom: 1px solid #f1f3f4;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .emp-suggestion-row:last-child {
+        border-bottom: none;
+    }
+    .emp-suggestion-row:hover {
+        background-color: #f3e8ff;
+    }
+    .emp-suggestion-row.selected-row {
+        background-color: #ede7f6;
+    }
+    .selected-emp-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background-color: #ede7f6;
+        color: #512da8;
+        border: 1px solid #d1c4e9;
+        border-radius: 50px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.82rem;
+        font-weight: 500;
         transition: all 0.15s ease;
     }
-    .emp-badge-pill:hover {
-        transform: translateY(-2px);
+    .selected-emp-chip:hover {
+        background-color: #d1c4e9;
     }
-    .emp-badge-pill.selected {
-        background-color: #673ab7 !important;
-        color: white !important;
-        border-color: #673ab7 !important;
+    .selected-emp-chip .remove-chip-btn {
+        border: none;
+        background: transparent;
+        color: #673ab7;
+        cursor: pointer;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        font-size: 1.1rem;
+        line-height: 1;
+    }
+    .selected-emp-chip .remove-chip-btn:hover {
+        color: #d32f2f;
+    }
+    .quick-dept-tag {
+        cursor: pointer;
+        font-size: 0.78rem;
+        padding: 0.25rem 0.65rem;
+        border-radius: 50px;
+        border: 1px solid #e0e0e0;
+        background-color: #ffffff;
+        color: #495057;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .quick-dept-tag:hover {
+        background-color: #673ab7;
+        color: #ffffff;
+        border-color: #673ab7;
     }
 </style>
 
@@ -121,38 +251,94 @@
                     <span class="text-danger small fw-semibold">* Required</span>
                 </div>
                 <p class="text-muted small mb-3">
-                    Only employees whose Personnel Number (PERNR) is specified below will be authorized to access and submit this survey.
+                    Search and authorize employees by their <strong>PERNR</strong>, <strong>Name</strong>, <strong>Department</strong> (e.g. Cyber Security), or <strong>Location</strong>. You can add entire departments or select specific individuals.
                 </p>
 
-                <!-- PERNR input box -->
-                <div class="mb-3">
-                    <label class="form-label small fw-semibold text-secondary">Authorized PERNR Numbers (comma-separated):</label>
-                    <input type="text" name="allowedPernrs" id="allowedPernrs" class="form-control shadow-sm" 
-                           placeholder="e.g. 20001, 20002, 20003, 83011590" 
-                           value="@(ViewBag.AllowedPernrsValue ?? "20001, 20002, 20003, 83011590")" required />
-                    <div class="form-text small">
-                        Selected: <strong id="selectedCount">0</strong> employee(s) authorized.
+                <!-- Search Input with Auto-Suggestions -->
+                <div class="emp-search-container mb-3" id="empSearchWrapper">
+                    <label class="form-label small fw-semibold text-secondary mb-1">
+                        Search & Add Attendees:
+                    </label>
+                    <div class="emp-search-input-group">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                        </svg>
+                        <input type="text" id="empSearchInput" class="form-control form-control-lg shadow-sm" 
+                               placeholder="Type PERNR, Name, Department (e.g. Cyber Security), or Location..." 
+                               autocomplete="off" 
+                               oninput="handleSearchInput(this.value)"
+                               onfocus="handleSearchFocus(this.value)" />
+                        <button type="button" class="btn-clear-search" id="btnClearSearch" title="Clear Search" onclick="clearSearchInput()">&times;</button>
+                    </div>
+
+                    <!-- Suggestions Dropdown Box (Appears while typing) -->
+                    <div class="emp-suggestions-dropdown" id="empSuggestionsDropdown">
+                        <!-- Populated dynamically via JavaScript -->
                     </div>
                 </div>
 
-                <!-- Quick Multi-select helper from master_data -->
-                <div class="bg-light p-3 rounded-3 border">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="small fw-bold text-dark">Quick Select from Master Data (@employees.Count employees found):</span>
+                <!-- Quick Department Suggestion Chips -->
+                @{
+                    var deptGroups = employees
+                        .Where(e => !string.IsNullOrWhiteSpace(e.Department))
+                        .GroupBy(e => e.Department!.Trim())
+                        .OrderByDescending(g => g.Count())
+                        .Take(8)
+                        .ToList();
+                }
+                @if (deptGroups.Any())
+                {
+                    <div class="d-flex flex-wrap align-items-center gap-1 mb-3">
+                        <span class="small text-muted me-1 fw-semibold">Quick Suggestions:</span>
+                        @foreach (var dept in deptGroups)
+                        {
+                            <button type="button" class="quick-dept-tag shadow-none" onclick="quickSearchDept('@dept.Key')">
+                                🏢 @dept.Key <span class="badge bg-light text-dark rounded-pill border">@dept.Count()</span>
+                            </button>
+                        }
+                    </div>
+                }
+
+                <!-- Selected Attendees Management Tray -->
+                <div class="bg-light p-3 rounded-3 border mb-2">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 pb-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="small fw-bold text-dark">Selected Attendees:</span>
+                            <span class="badge bg-purple text-white px-2 py-1 rounded-pill" style="background-color: #673ab7;">
+                                <strong id="selectedCount">0</strong> employee(s) authorized
+                            </span>
+                        </div>
                         <div class="btn-group btn-group-sm">
-                            <button type="button" class="btn btn-outline-secondary btn-sm py-0" onclick="selectAllPernrs()">Select All</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm py-0" onclick="clearAllPernrs()">Clear All</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-0" onclick="selectAllMasterData()">Select All (@employees.Count)</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm py-0" onclick="clearAllSelected()">Clear All</button>
                         </div>
                     </div>
 
-                    <div class="d-flex flex-wrap gap-2" id="employeePills">
-                        @foreach (var emp in employees)
-                        {
-                            <span class="badge bg-white text-dark border p-2 emp-badge-pill" 
-                                  data-pernr="@emp.Pernr" onclick="togglePernr('@emp.Pernr')">
-                                <strong>@emp.Pernr</strong> &bull; @emp.Name <small class="text-muted">(@emp.Department)</small>
-                            </span>
-                        }
+                    <!-- Selected Chips Container -->
+                    <div class="d-flex flex-wrap gap-2 mb-1" id="selectedChipsContainer">
+                        <!-- Selected employee tags rendered here -->
+                    </div>
+                    <div id="noSelectedAlert" class="text-muted small fst-italic" style="display: none;">
+                        No employees currently selected. Search above or select all to authorize attendees.
+                    </div>
+                </div>
+
+                <!-- Hidden Input Bound to Form (Exact comma-separated PERNRs submitted to backend) -->
+                <input type="hidden" name="allowedPernrs" id="allowedPernrs" value="@(ViewBag.AllowedPernrsValue ?? "20001, 20002, 20003, 83011590")" required />
+
+                <!-- Collapsible Raw PERNR View (for bulk paste or manual verification) -->
+                <div class="mt-2">
+                    <a class="text-decoration-none small text-muted" data-bs-toggle="collapse" href="#rawPernrCollapse" role="button" aria-expanded="false" aria-controls="rawPernrCollapse">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-chevron-down me-1" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/>
+                        </svg>
+                        <span>View / Edit raw PERNR comma-separated list</span>
+                    </a>
+                    <div class="collapse mt-2" id="rawPernrCollapse">
+                        <textarea id="rawPernrsTextarea" class="form-control form-control-sm font-monospace" rows="2" 
+                                  placeholder="e.g. 20001, 20002, 20003" 
+                                  oninput="syncFromRawTextarea(this.value)"></textarea>
+                        <div class="form-text small">You can also paste comma-separated PERNR numbers directly here.</div>
                     </div>
                 </div>
             </div>
@@ -268,9 +454,7 @@
         }
 
         renderQuestions();
-        syncPernrPills();
-
-        document.getElementById("allowedPernrs").addEventListener("input", syncPernrPills);
+        initSelectedPernrs();
     });
 
     // ==========================================
@@ -493,53 +677,392 @@
     }
 
     // ==========================================
-    // PERNR MANAGEMENT
+    // EMPLOYEE DATA & PERNR ATTENDEES MANAGEMENT
     // ==========================================
-    function getPernrArray() {
-        const input = document.getElementById("allowedPernrs").value;
-        return input
-            .split(/[\s,;]+/)
-            .map(p => p.trim())
-            .filter(p => p.length > 0);
+    const allEmployees = @Html.Raw(JsonSerializer.Serialize(employees.Select(e => new {
+        pernr = e.Pernr,
+        name = e.Name ?? "",
+        designation = e.Designation ?? "",
+        department = e.Department ?? "",
+        location = !string.IsNullOrWhiteSpace(e.PersonnelArea) ? e.PersonnelArea : (e.Company ?? "")
+    })));
+
+    const empMap = {};
+    allEmployees.forEach(e => {
+        empMap[e.pernr] = e;
+    });
+
+    let selectedPernrs = new Set();
+
+    function initSelectedPernrs() {
+        selectedPernrs.clear();
+        const inputVal = document.getElementById("allowedPernrs").value;
+        if (inputVal) {
+            inputVal.split(/[\s,;]+/).map(p => p.trim()).filter(p => p.length > 0).forEach(p => {
+                selectedPernrs.add(p);
+            });
+        }
+        syncPernrState();
     }
 
-    function syncPernrPills() {
-        const list = getPernrArray();
-        document.getElementById("selectedCount").innerText = list.length;
+    function syncPernrState() {
+        const pernrArr = Array.from(selectedPernrs);
+        const csv = pernrArr.join(", ");
+        document.getElementById("allowedPernrs").value = csv;
+        document.getElementById("selectedCount").innerText = pernrArr.length;
 
-        document.querySelectorAll(".emp-badge-pill").forEach(pill => {
-            const pernr = pill.getAttribute("data-pernr");
-            if (list.includes(pernr)) {
-                pill.classList.add("selected");
-            } else {
-                pill.classList.remove("selected");
-            }
+        const rawTextarea = document.getElementById("rawPernrsTextarea");
+        if (rawTextarea) rawTextarea.value = csv;
+
+        renderSelectedChips();
+
+        // Refresh suggestions active state if search box is open
+        const searchInput = document.getElementById("empSearchInput");
+        if (searchInput && searchInput.value.trim()) {
+            renderSuggestions(searchInput.value.trim());
+        }
+    }
+
+    function renderSelectedChips() {
+        const container = document.getElementById("selectedChipsContainer");
+        const noAlert = document.getElementById("noSelectedAlert");
+        if (!container) return;
+        container.innerHTML = "";
+
+        if (selectedPernrs.size === 0) {
+            if (noAlert) noAlert.style.display = "block";
+            return;
+        }
+        if (noAlert) noAlert.style.display = "none";
+
+        selectedPernrs.forEach(pernr => {
+            const emp = empMap[pernr];
+            const chip = document.createElement("span");
+            chip.className = "selected-emp-chip";
+            const label = emp 
+                ? `<strong>${escapeHtml(emp.pernr)}</strong> &bull; ${escapeHtml(emp.name)} <small class="text-muted">(${escapeHtml(emp.department || "General")})</small>`
+                : `<strong>${escapeHtml(pernr)}</strong>`;
+
+            chip.innerHTML = `
+                <span>${label}</span>
+                <button type="button" class="remove-chip-btn" title="Remove ${escapeHtml(pernr)}" onclick="removePernr('${escapeJs(pernr)}')">&times;</button>
+            `;
+            container.appendChild(chip);
         });
     }
 
     function togglePernr(pernr) {
-        let list = getPernrArray();
-        if (list.includes(pernr)) {
-            list = list.filter(p => p !== pernr);
+        if (selectedPernrs.has(pernr)) {
+            selectedPernrs.delete(pernr);
         } else {
-            list.push(pernr);
+            selectedPernrs.add(pernr);
         }
-        document.getElementById("allowedPernrs").value = list.join(", ");
-        syncPernrPills();
+        syncPernrState();
     }
 
-    function selectAllPernrs() {
-        const all = [];
-        document.querySelectorAll(".emp-badge-pill").forEach(pill => {
-            all.push(pill.getAttribute("data-pernr"));
+    function removePernr(pernr) {
+        selectedPernrs.delete(pernr);
+        syncPernrState();
+    }
+
+    function selectAllInGroup(pernrs) {
+        if (Array.isArray(pernrs)) {
+            pernrs.forEach(p => selectedPernrs.add(p));
+        }
+        syncPernrState();
+    }
+
+    function deselectAllInGroup(pernrs) {
+        if (Array.isArray(pernrs)) {
+            pernrs.forEach(p => selectedPernrs.delete(p));
+        }
+        syncPernrState();
+    }
+
+    function selectAllMasterData() {
+        allEmployees.forEach(e => selectedPernrs.add(e.pernr));
+        syncPernrState();
+    }
+
+    function clearAllSelected() {
+        selectedPernrs.clear();
+        syncPernrState();
+    }
+
+    function syncFromRawTextarea(val) {
+        selectedPernrs.clear();
+        if (val) {
+            val.split(/[\s,;]+/).map(p => p.trim()).filter(p => p.length > 0).forEach(p => {
+                selectedPernrs.add(p);
+            });
+        }
+        syncPernrState();
+    }
+
+    function getPernrArray() {
+        return Array.from(selectedPernrs);
+    }
+
+    // Search and Auto-Suggestions
+    function handleSearchInput(val) {
+        const clearBtn = document.getElementById("btnClearSearch");
+        if (val.trim()) {
+            clearBtn.style.display = "block";
+            renderSuggestions(val.trim());
+        } else {
+            clearBtn.style.display = "none";
+            closeSuggestions();
+        }
+    }
+
+    function handleSearchFocus(val) {
+        if (val.trim()) {
+            renderSuggestions(val.trim());
+        }
+    }
+
+    function quickSearchDept(deptName) {
+        const input = document.getElementById("empSearchInput");
+        input.value = deptName;
+        document.getElementById("btnClearSearch").style.display = "block";
+        input.focus();
+        renderSuggestions(deptName);
+    }
+
+    function clearSearchInput() {
+        const input = document.getElementById("empSearchInput");
+        input.value = "";
+        document.getElementById("btnClearSearch").style.display = "none";
+        closeSuggestions();
+    }
+
+    function closeSuggestions() {
+        const dropdown = document.getElementById("empSuggestionsDropdown");
+        if (dropdown) {
+            dropdown.style.display = "none";
+            dropdown.innerHTML = "";
+        }
+    }
+
+    function renderSuggestions(query) {
+        const dropdown = document.getElementById("empSuggestionsDropdown");
+        if (!dropdown) return;
+        const q = query.toLowerCase();
+
+        // 1. Group by department
+        const deptsMap = {};
+        allEmployees.forEach(e => {
+            const d = e.department || "Other";
+            if (!deptsMap[d]) deptsMap[d] = [];
+            deptsMap[d].push(e);
         });
-        document.getElementById("allowedPernrs").value = all.join(", ");
-        syncPernrPills();
+        const matchingDepts = Object.keys(deptsMap).filter(d => d.toLowerCase().includes(q));
+
+        // 2. Group by location
+        const locsMap = {};
+        allEmployees.forEach(e => {
+            if (e.location) {
+                if (!locsMap[e.location]) locsMap[e.location] = [];
+                locsMap[e.location].push(e);
+            }
+        });
+        const matchingLocs = Object.keys(locsMap).filter(l => l.toLowerCase().includes(q));
+
+        // 3. Matching employees (direct match on PERNR, Name, Dept, Location, Designation)
+        const matchingEmps = allEmployees.filter(e => 
+            e.pernr.toLowerCase().includes(q) ||
+            e.name.toLowerCase().includes(q) ||
+            e.department.toLowerCase().includes(q) ||
+            e.location.toLowerCase().includes(q) ||
+            e.designation.toLowerCase().includes(q)
+        );
+
+        if (matchingDepts.length === 0 && matchingLocs.length === 0 && matchingEmps.length === 0) {
+            dropdown.innerHTML = `
+                <div class="p-3 text-center text-muted small">
+                    <div class="fw-semibold text-dark mb-1">No employees found matching "${escapeHtml(query)}"</div>
+                    <div>Try searching by PERNR number, employee name, department (e.g. Cyber Security), or location.</div>
+                </div>
+            `;
+            dropdown.style.display = "block";
+            return;
+        }
+
+        let html = "";
+
+        // Section A: Matching Departments (e.g. Cyber Security)
+        matchingDepts.forEach(deptName => {
+            const members = deptsMap[deptName];
+            const memberPernrs = members.map(m => m.pernr);
+            const allSelected = memberPernrs.every(p => selectedPernrs.has(p));
+            const someSelected = memberPernrs.some(p => selectedPernrs.has(p));
+
+            html += `
+                <div class="emp-suggestion-section">
+                    <div class="emp-suggestion-header">
+                        <div>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle me-1">🏢 Department</span>
+                            <span class="text-dark fw-bold">${escapeHtml(deptName)}</span>
+                            <span class="badge bg-light text-muted border rounded-pill ms-1">${members.length} members</span>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            ${allSelected ? `
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 fw-semibold" onclick="deselectAllInGroup(${JSON.stringify(memberPernrs).replace(/"/g, '&quot;')})">
+                                    ✕ Deselect All (${members.length})
+                                </button>
+                            ` : `
+                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" onclick="selectAllInGroup(${JSON.stringify(memberPernrs).replace(/"/g, '&quot;')})">
+                                    ✓ Select All (${members.length})
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                    <div class="p-1">
+                        ${members.map(emp => {
+                            const isSel = selectedPernrs.has(emp.pernr);
+                            return `
+                                <div class="emp-suggestion-row ${isSel ? 'selected-row' : ''}" onclick="togglePernr('${escapeJs(emp.pernr)}')">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="checkbox" class="form-check-input mt-0" ${isSel ? 'checked' : ''} onclick="event.stopPropagation(); togglePernr('${escapeJs(emp.pernr)}')">
+                                        <div>
+                                            <div class="small fw-semibold text-dark">
+                                                ${escapeHtml(emp.name)} 
+                                                <span class="badge bg-light text-secondary border font-monospace ms-1">${escapeHtml(emp.pernr)}</span>
+                                            </div>
+                                            <div class="text-muted" style="font-size: 0.78rem;">
+                                                ${escapeHtml(emp.designation || emp.department)} &bull; ${escapeHtml(emp.location || "General")}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm ${isSel ? 'btn-outline-danger' : 'btn-outline-primary'} py-0 px-2" onclick="event.stopPropagation(); togglePernr('${escapeJs(emp.pernr)}')">
+                                        ${isSel ? 'Remove' : '+ Select'}
+                                    </button>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        // Section B: Matching Locations
+        matchingLocs.forEach(locName => {
+            if (matchingDepts.length > 0 && matchingLocs.length > 2) return;
+            const members = locsMap[locName];
+            const memberPernrs = members.map(m => m.pernr);
+            const allSelected = memberPernrs.every(p => selectedPernrs.has(p));
+
+            html += `
+                <div class="emp-suggestion-section">
+                    <div class="emp-suggestion-header">
+                        <div>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle me-1">📍 Location</span>
+                            <span class="text-dark fw-bold">${escapeHtml(locName)}</span>
+                            <span class="badge bg-light text-muted border rounded-pill ms-1">${members.length} members</span>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            ${allSelected ? `
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 fw-semibold" onclick="deselectAllInGroup(${JSON.stringify(memberPernrs).replace(/"/g, '&quot;')})">
+                                    ✕ Deselect All (${members.length})
+                                </button>
+                            ` : `
+                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 fw-semibold" onclick="selectAllInGroup(${JSON.stringify(memberPernrs).replace(/"/g, '&quot;')})">
+                                    ✓ Select All (${members.length})
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                    <div class="p-1">
+                        ${members.map(emp => {
+                            const isSel = selectedPernrs.has(emp.pernr);
+                            return `
+                                <div class="emp-suggestion-row ${isSel ? 'selected-row' : ''}" onclick="togglePernr('${escapeJs(emp.pernr)}')">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="checkbox" class="form-check-input mt-0" ${isSel ? 'checked' : ''} onclick="event.stopPropagation(); togglePernr('${escapeJs(emp.pernr)}')">
+                                        <div>
+                                            <div class="small fw-semibold text-dark">
+                                                ${escapeHtml(emp.name)} 
+                                                <span class="badge bg-light text-secondary border font-monospace ms-1">${escapeHtml(emp.pernr)}</span>
+                                            </div>
+                                            <div class="text-muted" style="font-size: 0.78rem;">
+                                                ${escapeHtml(emp.department)} &bull; ${escapeHtml(emp.designation || "")}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm ${isSel ? 'btn-outline-danger' : 'btn-outline-success'} py-0 px-2" onclick="event.stopPropagation(); togglePernr('${escapeJs(emp.pernr)}')">
+                                        ${isSel ? 'Remove' : '+ Select'}
+                                    </button>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        // Section C: Matching Employees (individual matches if not already under matching departments)
+        if (matchingDepts.length === 0 && matchingLocs.length === 0) {
+            html += `
+                <div class="emp-suggestion-section">
+                    <div class="emp-suggestion-header">
+                        <div>
+                            <span class="badge bg-purple text-white me-1" style="background-color: #673ab7;">👤 Matching Employees</span>
+                            <span class="text-dark fw-bold">"${escapeHtml(query)}"</span>
+                            <span class="badge bg-light text-muted border rounded-pill ms-1">${matchingEmps.length} found</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-semibold" onclick="selectAllInGroup(${JSON.stringify(matchingEmps.map(m => m.pernr)).replace(/"/g, '&quot;')})">
+                            ✓ Select All (${matchingEmps.length})
+                        </button>
+                    </div>
+                    <div class="p-1">
+                        ${matchingEmps.map(emp => {
+                            const isSel = selectedPernrs.has(emp.pernr);
+                            return `
+                                <div class="emp-suggestion-row ${isSel ? 'selected-row' : ''}" onclick="togglePernr('${escapeJs(emp.pernr)}')">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="checkbox" class="form-check-input mt-0" ${isSel ? 'checked' : ''} onclick="event.stopPropagation(); togglePernr('${escapeJs(emp.pernr)}')">
+                                        <div>
+                                            <div class="small fw-semibold text-dark">
+                                                ${escapeHtml(emp.name)} 
+                                                <span class="badge bg-light text-secondary border font-monospace ms-1">${escapeHtml(emp.pernr)}</span>
+                                            </div>
+                                            <div class="text-muted" style="font-size: 0.78rem;">
+                                                ${escapeHtml(emp.department)} &bull; ${escapeHtml(emp.location || "General")}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm ${isSel ? 'btn-outline-danger' : 'btn-outline-purple'} py-0 px-2" style="${!isSel ? 'border-color: #673ab7; color: #673ab7;' : ''}" onclick="event.stopPropagation(); togglePernr('${escapeJs(emp.pernr)}')">
+                                        ${isSel ? 'Remove' : '+ Select'}
+                                    </button>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        dropdown.innerHTML = html;
+        dropdown.style.display = "block";
     }
 
-    function clearAllPernrs() {
-        document.getElementById("allowedPernrs").value = "";
-        syncPernrPills();
+    // Dismiss suggestions dropdown when clicking outside
+    document.addEventListener("click", function (e) {
+        const wrapper = document.getElementById("empSearchWrapper");
+        if (wrapper && !wrapper.contains(e.target)) {
+            closeSuggestions();
+        }
+    });
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            closeSuggestions();
+        }
+    });
+
+    function escapeJs(text) {
+        if (!text) return "";
+        return String(text).replace(/'/g, "\\'").replace(/"/g, '\\"');
     }
 
     // ==========================================
